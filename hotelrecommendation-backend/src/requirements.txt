@@ -1,0 +1,14 @@
+﻿
+Flask
+flask-api
+flask-cors
+requests
+
+psycopg2-binary
+Flask-SQLAlchemy
+Flask-Bcrypt
+marshmallow
+Flask-JWT-Extended
+numpy
+scikit-learn==0.20
+pandas
