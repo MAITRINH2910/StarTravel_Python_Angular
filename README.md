@@ -31,3 +31,8 @@ Open cmd:
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
+## Page Admin
+<ul>
+    <li>http://localhost:4200/admin</li>
+    <li>Account: admin. Password: admin</li>  
+</ul>
