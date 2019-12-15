@@ -23,15 +23,15 @@ def token_required(f):
             token = request.headers['user-access-token']
 
         if not token:
-            return jsonify({'message' : 'Token is missing!'}), 401
+            return custom_response({'message' : 'Token is missing!'},401)
 
         try:
             data = jwt.decode(token, config.SECRET_KEY)
             current_user = User.query.filter_by(username=data['username']).first()
         except jwt.ExpiredSignatureError as e1:
-            return jsonify({'message': 'token expired, please login again'}),401
+            return custom_response({'message': 'token expired, please login again'},401)
         except:
-            return jsonify({'message' : 'Token is invalid!'}), 401
+            return custom_response({'message' : 'Token is invalid!'},401) 
 
         return f(current_user, *args, **kwargs)
 
@@ -47,17 +47,17 @@ def token_required_role_hotel_owner(f):
             token = request.headers['user-access-token']
 
         if not token:
-            return jsonify({'message' : 'Token is missing!'}), 401
+            return custom_response({'message' : 'Token is missing!'},401)
 
         try:
             data = jwt.decode(token, config.SECRET_KEY)
             if data['role'] != "HOTEL_OWNER":
-                return jsonify({'message' : 'Permission denied '}), 401
+                return custom_response({'message' : 'Permission denied '},401)
             current_user = User.query.filter_by(username=data['username']).first()
         except jwt.ExpiredSignatureError as e1:
-            return jsonify({'message': 'token expired, please login again'}),401
+            return custom_response({'message': 'token expired, please login again'},401)
         except:
-            return jsonify({'message' : 'Token is invalid!'}), 401
+            return custom_response({'message' : 'Token is invalid!'},401) 
 
         return f(current_user, *args, **kwargs)
 
@@ -73,17 +73,17 @@ def token_required_role_admin(f):
             token = request.headers['user-access-token']
 
         if not token:
-            return jsonify({'message' : 'Token is missing!'}), 401
+            return custom_response({'message' : 'Token is missing!'},401)
 
         try:
             data = jwt.decode(token, config.SECRET_KEY)
             if data['role'] != "ADMIN":
-                return jsonify({'message' : 'Permission denied '}), 401
+                return custom_response({'message' : 'Permission denied '},401)
             current_user = User.query.filter_by(username=data['username']).first()
         except jwt.ExpiredSignatureError as e1:
-            return jsonify({'message': 'token expired, please login again'}),401
+            return custom_response({'message': 'token expired, please login again'},401)
         except:
-            return jsonify({'message' : 'Token is invalid!'}), 401
+            return custom_response({'message' : 'Token is invalid!'},401) 
 
         return f(current_user, *args, **kwargs)
 
@@ -149,7 +149,7 @@ def login():
         password = request.get_json()['password']
         result = ''
         if not username or not password:
-            return custom_response({'error': 'Username and Password are required'}, 400)
+            return custom_response({'error': 'you need username and password to sign in'}, 400)
         user = User.get_user_by_username(username)
         if user != None:
             if bcrypt.check_password_hash(user.password, password):
@@ -170,10 +170,11 @@ def login():
         return custom_response({"error" : str(e)}, 400)
 
 
-@user_api.route('/delete_user/<int:user_id>' , methods=['DELETE'])
+@user_api.route('/delete_user/<string:user_id>' , methods=['DELETE'])
 @token_required_role_admin
 def delete_hotel(current_user,user_id):
     try:
+        user_id = int(user_id)
         user = User.query.filter_by(id=user_id).first()
         if user.role == "ADMIN":
             return custom_response({'error' : 'Permission denied!'},400)

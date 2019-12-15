@@ -108,15 +108,6 @@ def get_top_hotels():
     except Exception as e:
         return custom_response({ 'error': str(e)},400)
 
-@hotel_api.route('/get_all_hotels_status/<string:status>', methods=['GET'])
-@token_required_role_admin
-def get_all_hotels_status(current_user,status):
-    hotels = Hotel.query.filter_by(status=status).all()
-    listHotels = []
-    for hotel in hotels:
-        listHotels.append(hotel.dump())
-    return custom_response(listHotels,200)
-
 @hotel_api.route('/get_all_hotels_in_city/<string:city>', methods=['GET'])
 def get_all_hotels_in_city(city):
     hotels = Hotel.query.filter_by(city=city,status='ACTIVE').all()
@@ -125,14 +116,10 @@ def get_all_hotels_in_city(city):
         listHotels.append(hotel.dump())
     return custom_response(listHotels,200)
 
-@hotel_api.route('/get_hotel_by_name',methods=['POST'])
-def get_hotel_by_name():
-    data = request.get_json()
-    name = data['name']
-    search = "%{}%".format(name)
-    hotels = Hotel.query.filter_by(status="ACTIVE").filter(Hotel.name.like(search)).all()
-    if not hotels:
-        return custom_response({'error' : 'No hotel found!'},404)
+@hotel_api.route('/get_all_hotels_status/<string:status>', methods=['GET'])
+@token_required_role_admin
+def get_all_hotels_status(user,status):
+    hotels = Hotel.query.filter_by(status=status).all()
     listHotels = []
     for hotel in hotels:
         listHotels.append(hotel.dump())
@@ -140,7 +127,7 @@ def get_hotel_by_name():
 
 @hotel_api.route('/get_all_hotels', methods=['GET'])
 @token_required_role_admin
-def get_all_hotels(current_user):
+def get_all_hotels(user):
     hotels = Hotel.query.all()
     listHotels = []
     for hotel in hotels:
@@ -182,6 +169,19 @@ def get_one_hotel(hotel_id):
     result = hotel.dump()
     return custom_response({"detail_hotels" : result , "utilities" : dict_utilities},200)
 
+@hotel_api.route('/get_hotel_by_name',methods=['POST'])
+def get_hotel_by_name():
+    data = request.get_json()
+    name = data['name']
+    search = "%{}%".format(name)
+    hotels = Hotel.query.filter_by(status="ACTIVE").filter(Hotel.name.like(search)).all()
+    if not hotels:
+        return custom_response({'error' : 'No hotel found!'},404)
+    listHotels = []
+    for hotel in hotels:
+        listHotels.append(hotel.dump())
+    return custom_response(listHotels,200)
+
 @hotel_api.route('/add_hotel', methods=['POST'])
 @token_required_role_hotel_owner
 def add_hotel(current_user):
@@ -220,7 +220,7 @@ def approve_hotel(current_user,hotel_id):
 @token_required_role_hotel_owner
 def update_hotel(current_user,hotel_id):
     data = request.get_json()
-    hotel = Hotel.query.filter_by(id=hotel_id).first()
+    hotel = Hotel.query.filter_by(id=hotel_id,hotel_owner_id=current_user.id).first()
     if not hotel:
         return custom_response({'error' : 'No hotel founded!'},404)
     hotel.status = 'INACTIVE'#data['status']
@@ -231,8 +231,13 @@ def update_hotel(current_user,hotel_id):
     hotel.address = data['address']
     hotel.rating = data['rating']
     hotel.price = data['price']
-    db.session.commit()
-    return custom_response({'success' : 'Update hotel has been completed!'},200)
+    try:
+        db.session.commit()
+        return custom_response({'success' : 'Update hotel has been completed!'},200)
+    except Exception as e:
+        return custom_response({ 'error': "Duplicate address"},400)
+
+
 
 @hotel_api.route('/get_information_database',methods=['GET'])
 @token_required_role_admin
@@ -263,8 +268,43 @@ def get_information_owner(current_user):
     return custom_response(result,200)
 
 @hotel_api.route('/delete_hotel/<string:hotel_id>' , methods=['DELETE'])
-@token_required
+@token_required_role_hotel_owner
 def delete_hotel(current_user,hotel_id):
+    try:
+        hotel = Hotel.query.filter_by(id=hotel_id,hotel_owner_id=current_user.id).first()
+        if not hotel:
+            return custom_response({'error' : 'No hotel founded!'},404)
+        db.session.delete(hotel)
+        db.session.commit()
+        return custom_response({'success' : 'Delete hotel has been completed!'},200)
+    except Exception as e:
+        return custom_response({"error" : str(e) } ,400)
+
+
+@hotel_api.route('/update/<string:hotel_id>',methods=['PUT'])
+@token_required_role_admin
+def update(current_user,hotel_id):
+    data = request.get_json()
+    hotel = Hotel.query.filter_by(id=hotel_id).first()
+    if not hotel:
+        return custom_response({'error' : 'No hotel founded!'},404)
+    hotel.status = data['status']
+    hotel.city = data['city']
+    hotel.name = data['name']
+    hotel.link = data['link']
+    hotel.img = data['img']
+    hotel.address = data['address']
+    hotel.rating = data['rating']
+    hotel.price = data['price']
+    try:
+        db.session.commit()
+        return custom_response({'success' : 'Update hotel has been completed!'},200)
+    except Exception as e:
+        return custom_response({ 'error': "Duplicate address"},400)
+
+@hotel_api.route('/delete/<string:hotel_id>' , methods=['DELETE'])
+@token_required_role_admin
+def delete(current_user,hotel_id):
     try:
         hotel = Hotel.query.filter_by(id=hotel_id).first()
         if not hotel:

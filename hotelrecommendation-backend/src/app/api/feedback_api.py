@@ -50,6 +50,7 @@ def add_feedback(current_user):
         new_feedback = Feedback(user_id,hotel_id,content,rating)
         db.session.add(new_feedback)
         db.session.commit()
+        # result = new_feedback.dump()
         return custom_response('added',200)
     except Exception as e:
         return custom_response(str(e),500)
